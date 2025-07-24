@@ -51,6 +51,15 @@ def generate(input):
 
     # Load image from base64 instead of URL
     base64_image = values['input_image_check']
+    controlnet_image_pil = decode_base64_image(base64_image)
+
+    # Convert PIL Image to NumPy array (as you are already doing)
+    controlnet_image_np = np.array(controlnet_image_pil)
+
+    # Convert NumPy array to PyTorch tensor
+    # You might need to adjust the dtype and shape depending on the library's requirements
+    controlnet_image_tensor = torch.from_numpy(controlnet_image_np).permute(2, 0, 1).float() / 255.0 # Example conversion
+
     controlnet_image = decode_base64_image(base64_image)
     controlnet_image_width, controlnet_image_height = controlnet_image.size
     controlnet_image_aspect_ratio = controlnet_image_width / controlnet_image_height
@@ -86,7 +95,7 @@ def generate(input):
     conditioning = CLIPTextEncodeFlux.encode(clip, positive_prompt, positive_prompt, 4.0)[0]
     neg_conditioning = CLIPTextEncodeFlux.encode(clip, negative_prompt, negative_prompt, 4.0)[0]
 
-    controlnet_depth = DepthAnythingV2Preprocessor.execute(np.array(controlnet_image), "depth_anything_v2_vitl.pth", resolution=1024)[0]
+    controlnet_depth = DepthAnythingV2Preprocessor.execute(controlnet_image_tensor, "depth_anything_v2_vitl.pth", resolution=1024)[0]
     controlnet_condition = ApplyFluxControlNet.prepare(controlnet, controlnet_depth, controlnet_strength)[0]
     latent_image = EmptyLatentImage.generate(closestNumber(final_width, 16), closestNumber(final_height, 16))[0]
 
