@@ -49,17 +49,21 @@ def decode_base64_image(base64_str):
 def generate(input):
     values = input["input"]
 
-    # Load image from base64 instead of URL
+    # Load image from base64
     base64_image = values['input_image_check']
     controlnet_image_pil = decode_base64_image(base64_image)
-
-    # Convert PIL Image to NumPy array (as you are already doing)
-    controlnet_image_np = np.array(controlnet_image_pil)
-
-    # Convert NumPy array to PyTorch tensor
-    # You might need to adjust the dtype and shape depending on the library's requirements
-    controlnet_image_tensor = torch.from_numpy(controlnet_image_np).permute(2, 0, 1).float() / 255.0 # Example conversion
-
+    
+    # 1. Convert to RGB to remove the alpha channel (4 channels -> 3 channels)
+    controlnet_image_rgb = controlnet_image_pil.convert("RGB")
+    
+    # Convert PIL Image to NumPy array
+    controlnet_image_np = np.array(controlnet_image_rgb)
+    
+    # Convert NumPy array to a PyTorch tensor with the correct shape and add a batch dimension
+    controlnet_image_tensor = torch.from_numpy(controlnet_image_np).permute(2, 0, 1).float() / 255.0
+    # 2. Add a batch dimension (C, H, W) -> (1, C, H, W)
+    controlnet_image_tensor = controlnet_image_tensor.unsqueeze(0)
+    
     controlnet_image = decode_base64_image(base64_image)
     controlnet_image_width, controlnet_image_height = controlnet_image.size
     controlnet_image_aspect_ratio = controlnet_image_width / controlnet_image_height
